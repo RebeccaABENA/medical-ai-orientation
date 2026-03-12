@@ -1,12 +1,10 @@
-# 🏥 Medical AI Orientation
+#  Medical AI Orientation
 
 Système intelligent d'orientation médicale basé sur l'analyse sémantique et l'IA générative.
 
-> ⚠️ **Disclaimer** : Ce projet est un outil d'orientation indicative uniquement. Il ne remplace en aucun cas un avis médical. En cas d'urgence, appelez le 15 (SAMU) ou le 112.
-
 ---
 
-## 📌 Description
+##  Description
 
 **Medical AI Orientation** est une application web permettant à un utilisateur de décrire ses symptômes en langage naturel et d'obtenir une orientation vers les spécialités médicales les plus adaptées.
 
@@ -20,7 +18,7 @@ Ce projet a été réalisé dans le cadre du module **IA Générative** à l'EFR
 
 ---
 
-## 🗂️ Structure du projet
+##  Structure du projet
 
 ```
 medical-ai-orientation/
@@ -49,7 +47,7 @@ medical-ai-orientation/
 
 ---
 
-## ⚙️ Architecture technique
+##  Architecture technique
 
 ```
 Utilisateur
@@ -67,7 +65,7 @@ Utilisateur
 
 ---
 
-## 🚀 Installation et lancement
+##  Installation et lancement
 
 ### Prérequis
 
@@ -137,7 +135,7 @@ L'application sera disponible sur `http://localhost:3000`
 
 ---
 
-## 🧠 Fonctionnement du moteur sémantique
+##  Fonctionnement du moteur sémantique
 
 ### Entrées utilisateur
 | Champ | Type | Description |
@@ -166,7 +164,7 @@ L'application sera disponible sur `http://localhost:3000`
 
 ---
 
-## 🚨 Détection des Red Flags
+##  Détection des Red Flags
 
 Le système détecte automatiquement les signaux d'alerte urgents :
 - Douleur thoracique / oppression
@@ -180,7 +178,7 @@ En cas de red flag détecté, le champ `urgency` passe à `"urgent"`.
 
 ---
 
-## 📡 API Endpoints
+##  API Endpoints
 
 ### `GET /health`
 Vérifie que l'API est opérationnelle.
@@ -220,12 +218,12 @@ Retourne l'orientation médicale.
 
 ---
 
-## 🛠️ Technologies utilisées
+##  Technologies utilisées
 
 | Composant | Technologie |
 |-----------|-------------|
 | Frontend | Next.js 14, TypeScript, Tailwind CSS |
-| Backend | FastAPI, Python 3.10+ |
+| Backend | FastAPI, Python 3.11 |
 | NLP / Embeddings | SBERT (`all-MiniLM-L6-v2`) via SentenceTransformers |
 | IA Générative | Llama 3.2 (3B) via Ollama (local, coût zéro) |
 | Similarité | Similarité cosinus (numpy) |
@@ -233,15 +231,3 @@ Retourne l'orientation médicale.
 
 ---
 
-## 👥 Auteurs
-
-Projet réalisé en binôme dans le cadre du cours **IA Générative** — EFREI Data Engineering & AI 2025-2026.
-
-- Rebecca ABENA
-- *[Prénom NOM du binôme]*
-
----
-
-## 📄 Licence
-
-Projet académique — EFREI 2025-2026. Usage éducatif uniquement.
