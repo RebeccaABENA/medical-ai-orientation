@@ -33,7 +33,7 @@ medical-ai-orientation/
 │   │       ├── scoring.py           # Calcul de similarité cosinus + scoring pondéré
 │   │       ├── redflags.py          # Détection des signaux d'alerte
 │   │       ├── genai.py             # Génération d'explication via Llama (Ollama)
-│   │       └── specialties_knowledge.py
+│   │       
 │   └── requirements.txt
 │
 └── frontend/
