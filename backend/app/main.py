@@ -4,13 +4,20 @@ from typing import Dict, List, Optional
 from app.core.dataset import load_reference
 from app.core.scoring import orient_specialty
 from app.core.redflags import detect_redflags
-from app.core.genai import explain_orientation
+from app.core.genai import explain_orientation, enrich_if_short
 from fastapi.middleware.cors import CORSMiddleware
+import json
+import datetime
+import pathlib
 
 app = FastAPI(title="Medical Orientation API", version="1.0")
 
 # Load dataset + embeddings at startup
 ref = load_reference()
+
+# Fichier de sessions (EF1.2)
+SESSIONS_FILE = pathlib.Path("sessions.jsonl")
+
 
 class OrientRequest(BaseModel):
     symptoms_text: str = Field(..., min_length=3)
@@ -39,13 +46,16 @@ def health():
 
 @app.post("/orient", response_model=OrientResponse)
 def orient(req: OrientRequest):
-    red_flags = detect_redflags(req.symptoms_text, req.guided, req.intensity, req.duration_days)
+    # EF4.1 — Enrichissement conditionnel si < 5 mots
+    enriched_text = enrich_if_short(req.symptoms_text)
+
+    red_flags = detect_redflags(enriched_text, req.guided, req.intensity, req.duration_days)
     urgency = "urgent" if red_flags else "non_urgent"
 
-    top3 = orient_specialty(ref, req.symptoms_text, req.location, req.duration_days, req.intensity, req.guided)
+    top3 = orient_specialty(ref, enriched_text, req.location, req.duration_days, req.intensity, req.guided)
 
     explanation = explain_orientation(
-        symptoms_text=req.symptoms_text,
+        symptoms_text=enriched_text,
         location=req.location,
         duration_days=req.duration_days,
         intensity=req.intensity,
@@ -54,7 +64,7 @@ def orient(req: OrientRequest):
         red_flags=red_flags
     )
 
-    return OrientResponse(
+    response = OrientResponse(
         disclaimer="Orientation indicative uniquement. Ceci ne remplace pas un avis médical. En cas d'urgence ou de doute, appelez les services d'urgence.",
         red_flags=red_flags,
         urgency=urgency,
@@ -62,10 +72,38 @@ def orient(req: OrientRequest):
         explanation=explanation
     )
 
+    # EF1.2 — Sauvegarde de la session avec horodatage
+    session_entry = {
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "request": {
+            "symptoms_text": req.symptoms_text,
+            "enriched_text": enriched_text if enriched_text != req.symptoms_text else None,
+            "intensity": req.intensity,
+            "duration_days": req.duration_days,
+            "location": req.location,
+            "guided": req.guided,
+        },
+        "response": {
+            "urgency": urgency,
+            "red_flags": red_flags,
+            "top3": [
+                {"specialty": r.specialty, "score": r.score, "score_label": r.score_label}
+                for r in response.top3
+            ],
+        }
+    }
+    try:
+        with open(SESSIONS_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(session_entry, ensure_ascii=False) + "\n")
+    except Exception:
+        pass  # Ne pas faire échouer la requête si la sauvegarde échoue
+
+    return response
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # DEV ONLY
-    allow_credentials=False,  # doit être False si allow_origins=["*"]
-    allow_methods=["*"],      # inclut OPTIONS
-    allow_headers=["*"],
+    allow_origins=["http://localhost:3000"],  # Restreint au frontend local
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )

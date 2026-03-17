@@ -1,0 +1,181 @@
+======================================================================
+  CAHIER DES CHARGES — Medical AI Orientation
+  EFREI — Module IA Générative 2025-2026
+  Thématique : Orientation vers un médecin selon les symptômes décrits
+======================================================================
+
+
+1. OBJECTIF GENERAL
+-------------------
+Concevoir une application web d'orientation médicale permettant à un
+utilisateur de décrire ses symptômes en langage naturel et d'obtenir
+une orientation vers les spécialités médicales les plus adaptées.
+
+Le système repose sur :
+- Une analyse sémantique contextuelle (SBERT + cosinus)
+- Un moteur de scoring pondéré
+- Une détection automatique de red flags
+- Une IA générative locale (Llama via Ollama) pour la synthèse
+
+Il ne constitue EN AUCUN CAS un outil de diagnostic médical.
+
+
+2. EXIGENCES FONCTIONNELLES
+----------------------------
+
+EF1.1 — Questionnaire hybride (OBLIGATOIRE)
+  Combiner obligatoirement :
+  - Texte libre : description des symptômes en langage naturel
+  - Echelle de Likert (1-5) : intensité ressentie
+  - Champ numérique : durée des symptômes en jours
+  - Liste guidée : localisation anatomique
+      (tête, poitrine, ventre, dos, gorge, peau, yeux, urinaire, pelvien)
+  - Cases à cocher (signaux guidés) :
+      fièvre, douleur thoracique, détresse respiratoire,
+      malaise/perte de connaissance, signes neurologiques,
+      douleur abdominale, sang dans les selles, sang dans les urines
+
+EF1.2 — Stockage structuré (OBLIGATOIRE)
+  Chaque soumission doit être sauvegardée en JSON ou CSV local
+  avec horodatage (fichier sessions.jsonl).
+
+EF2.1 — Référentiel médical (OBLIGATOIRE)
+  - Minimum 40 symptômes associés
+  - Minimum 15 spécialités médicales
+  - Colonnes : MedID, BlockID, Specialite, Symptomes_associes,
+               Indications, Organes, RedFlags
+  - Texte riche par ligne pour SBERT (concaténation des colonnes)
+
+EF2.2 — Modèle SBERT (OBLIGATOIRE)
+  Utiliser all-MiniLM-L6-v2 via SentenceTransformers (open-source, local).
+
+EF2.3 — Similarité cosinus (OBLIGATOIRE)
+  Calculer la similarité cosinus entre vecteur utilisateur
+  et vecteurs du référentiel.
+
+EF3.1 — Formule de score pondérée (OBLIGATOIRE)
+  Score ligne = cosinus + bonus localisation (+0.05)
+              + bonus signaux guidés (+0.06 à +0.08)
+  Score spécialité = 0.7 × max_score + 0.3 × mean_score
+
+  Seuils de labels :
+  >= 0.60 → orientation principale
+  >= 0.40 → orientation secondaire
+  >= 0.30 → faible correspondance
+  <  0.30 → très faible correspondance
+
+EF3.2 — Top 3 recommandations (OBLIGATOIRE)
+  Retourner les 3 spécialités avec le score le plus élevé,
+  avec label et icône associés.
+
+EF4.1 — Enrichissement conditionnel GenAI (OBLIGATOIRE)
+  Si la description fait moins de 5 mots :
+  → Appeler Llama pour enrichir le texte avant embedding SBERT.
+  → 1 seul appel API, conditionnel uniquement.
+
+EF4.2 — Explication personnalisée GenAI (OBLIGATOIRE)
+  Générer une explication structurée avec ces sections :
+  - Résumé
+  - Orientation proposée
+  - Symptômes repérés
+  - Signaux d'alerte
+  - Prochaines étapes
+  → 1 seul appel API par soumission.
+
+EF4.3 — Disclaimer systématique (OBLIGATOIRE)
+  Rappeler systématiquement que l'orientation n'est pas un diagnostic.
+
+EF5 — Détection des red flags (OBLIGATOIRE)
+  Détecter automatiquement par regex :
+  - Douleur thoracique / oppression
+  - Essoufflement / difficulté à respirer
+  - Perte de connaissance / syncope
+  - Signes neurologiques aigus
+  - Sang dans les urines
+  - Sang dans les selles / vomissements sanglants
+  Détecter aussi via signaux guidés cochés et intensité = 5/5.
+  Champ urgency : "urgent" ou "non_urgent".
+
+EF6 — Visualisation des résultats (OBLIGATOIRE)
+  - Graphique barres horizontales ou radar des 3 scores → OBLIGATOIRE
+  - Code couleur des labels (vert / orange / gris)
+  - Sections GenAI visuellement distinctes
+  - Bloc rouge visible si red flag détecté
+
+
+3. EXIGENCES NON FONCTIONNELLES
+---------------------------------
+
+Coût GenAI       : Zéro — Llama 3.2 (3B) via Ollama en local uniquement
+Performance      : Réponse API < 5s hors génération IA, génération < 120s
+Appels GenAI     : Max 1 appel par soumission (hors EF4.1 conditionnel)
+Sécurité         : CORS configuré, aucune donnée envoyée à des API externes
+Stack technique  : FastAPI + Python 3.10+, Next.js 14+, Node.js 18+, Ollama
+Versioning       : Git/GitHub avec .gitignore complet
+                   (ia_env/, __pycache__/, .env, node_modules/)
+Documentation    : README complet (prérequis, installation, architecture)
+Disclaimer       : Affiché systématiquement (orientation non diagnostique)
+
+
+4. LIVRABLES ATTENDUS
+----------------------
+
+  Livrable                             Support            Evaluation
+  -----------------------------------  -----------------  ----------------
+  Code source complet + documentation  Moodle + GitHub    Note de groupe
+  README avec installation/archi       GitHub             Note de groupe
+  Support de présentation (slides)     Moodle             Note de groupe
+  Démonstration live de l'appli        Dernière séance    Note individuelle
+  Participation orale chaque membre    Dernière séance    Note individuelle
+
+
+5. GRILLE D'EVALUATION ESTIMEE
+--------------------------------
+
+  Critère                          Poids    Statut
+  ------------------------------   ------   --------------------
+  Questionnaire hybride (EF1.1)    10%      Fait
+  Stockage structuré (EF1.2)        5%      A implementer
+  Référentiel médical (EF2.1)      10%      Fait
+  SBERT + cosinus (EF2.2/2.3)      15%      Fait
+  Scoring pondéré + Top 3 (EF3)    15%      Fait
+  Enrichissement GenAI (EF4.1)      5%      A implementer
+  Explication GenAI (EF4.2/4.3)    10%      Partiel
+  Visualisation des résultats       10%      A implementer
+  Qualité interface web              5%      Partiel
+  Documentation / README / Git       5%      Partiel
+  Présentation orale (individuel)   10%      A préparer
+
+
+6. CHECKLIST DE LIVRAISON
+--------------------------
+
+BACKEND
+  [ ] enrich_if_short() implémenté dans genai.py (EF4.1)
+  [ ] Sauvegarde sessions en sessions.jsonl (EF1.2)
+  [ ] Max 1 appel GenAI par soumission (hors EF4.1 conditionnel)
+  [ ] CORS restreint à localhost:3000
+  [ ] requirements.txt complet
+
+FRONTEND
+  [ ] Graphique bar chart des scores visible
+  [ ] Code couleur des labels (vert/orange/gris)
+  [ ] Rendu GenAI structuré (sections distinctes)
+  [ ] Stepper visuel (étapes 1/2/3)
+  [ ] Spinner de chargement animé
+  [ ] Titre layout.tsx corrigé + lang="fr"
+
+PROJET / GIT
+  [ ] .gitignore complet (ia_env/, __pycache__/, .env, node_modules/)
+  [ ] README mis à jour (structure réelle du projet)
+  [ ] Dépôt GitHub accessible
+  [ ] Aucun token / clé API dans le code versionné
+
+DEMO
+  [ ] Ollama lancé avec llama3.2:3b (ollama serve)
+  [ ] Backend FastAPI démarré (uvicorn app.main:app --reload)
+  [ ] Frontend Next.js démarré (npm run dev)
+  [ ] 3 scénarios préparés (urgent / simple / ambigu)
+  [ ] Chaque membre du binôme a sa partie à défendre
+
+======================================================================

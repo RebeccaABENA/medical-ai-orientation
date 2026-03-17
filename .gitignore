@@ -1,5 +1,15 @@
-ia_env/ 
-node_modules/ 
-__pycache__/ 
-*.pyc 
-.env 
+ia_env/
+node_modules/
+__pycache__/
+*.pyc
+.env
+
+# Sessions (données locales, ne pas versionner)
+sessions.jsonl
+
+# Build Next.js
+.next/
+dist/
+
+# Logs
+*.log
