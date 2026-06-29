@@ -4,35 +4,6 @@ from typing import Dict, List
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "llama3.2:3b"   # ou "llama3.1:8b"
 
-
-def enrich_if_short(symptoms_text: str) -> str:
-    """
-    EF4.1 — Enrichissement conditionnel GenAI.
-    Si la description fait moins de 5 mots, appelle Llama pour l'enrichir
-    avant embedding SBERT. Un seul appel API conditionnel.
-    """
-    if len(symptoms_text.strip().split()) >= 5:
-        return symptoms_text  # Pas besoin d'enrichissement
-
-    prompt = f"""Tu es un assistant medical.
-L'utilisateur a decrit ses symptomes en peu de mots : "{symptoms_text}"
-Reformule en une phrase complete et descriptive (15-25 mots) pour mieux orienter vers une specialite medicale.
-Reponds uniquement avec la phrase reformulee, sans explication."""
-
-    try:
-        response = requests.post(
-            OLLAMA_URL,
-            json={"model": MODEL_NAME, "prompt": prompt, "stream": False},
-            timeout=60
-        )
-        response.raise_for_status()
-        enriched = response.json().get("response", "").strip()
-        return enriched if enriched else symptoms_text
-    except Exception:
-        # En cas d'erreur Ollama, on utilise le texte original
-        return symptoms_text
-
-
 def explain_orientation(
     symptoms_text: str,
     location: str,
@@ -84,22 +55,15 @@ Termine par:
 Ceci ne remplace pas un avis medical.
 """
 
-    try:
-        response = requests.post(
-            OLLAMA_URL,
-            json={
-                "model": MODEL_NAME,
-                "prompt": prompt,
-                "stream": False
-            },
-            timeout=120
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data.get("response", "").strip()
-    except requests.exceptions.ConnectionError:
-        return "⚠️ Le service IA local (Ollama) n'est pas disponible. Lancez 'ollama serve' puis réessayez."
-    except requests.exceptions.Timeout:
-        return "⚠️ La génération IA a dépassé le délai imparti (120s). Réessayez."
-    except Exception as e:
-        return f"⚠️ Erreur lors de la génération IA : {str(e)}"
+    response = requests.post(
+        OLLAMA_URL,
+        json={
+            "model": MODEL_NAME,
+            "prompt": prompt,
+            "stream": False
+        },
+        timeout=120
+    )
+    response.raise_for_status()
+    data = response.json()
+    return data.get("response", "").strip()
